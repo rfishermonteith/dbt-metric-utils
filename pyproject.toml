@@ -1,0 +1,44 @@
+[project]
+name = "dbt-utils"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Diederik Jan Lemkes", email = "dj.lemkes@gmail.com" }
+]
+dependencies = [
+    "dbt-core>=1.6.0",
+    "dbt-metricflow>=0.6.0",
+    "click>=7.1",
+    "yaspin>=2"
+]
+readme = "README.md"
+requires-python = ">= 3.10"
+
+[project.scripts]
+dbt-utils = 'dbt_utils.cli:cli'
+dbtu = 'dbt_utils.cli:cli'
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "ruff==0.5.6"
+]
+
+[tool.rye.scripts]
+test = { cmd = "pytest tests" }
+fmt = { cmd = "ruff format --check" }
+lint = { cmd = "ruff check" }
+fmt-fix = { cmd = "ruff format" }
+lint-fix = { cmd = "ruff check --fix" }
+checks = { chain = ["fmt", "lint"] }
+checks-fix = { chain = ["fmt-fix", "lint-fix"] }
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dbt_utils"]
