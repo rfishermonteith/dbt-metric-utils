@@ -13,15 +13,6 @@ import click
 
 from dbt_utils.materialize_metrics import get_metric_queries_as_dbt_vars
 
-# TODO
-# [x] Init should also install our macro
-# [x] Forward --help to dbt. Custom --help for dbt-utils
-# [x] CLI spinners
-# [x] Parse and proxy to materialize_metrics.py
-# [x] Expand to all MF parameters
-# [ ] Apply to BQ usage metrics
-# [ ] Call dbt-diagrams
-
 
 def coro(f):
     @wraps(f)
@@ -75,10 +66,11 @@ def cli(ctx, debug):
 
     if (
         ctx.invoked_subcommand is None
+        or ctx.invoked_subcommand not in ["compile", "docs", "show", "run", "test"]
         or ctx.invoked_subcommand.startswith("--")
         or ctx.invoked_subcommand.startswith("-")
     ):
-        # No sub-command has been passed. We want to proxy this to dbt as we want to
+        # We want to proxy this directly to dbt as we want to
         # be as invisible as possible for the user.
         args = (
             [ctx.invoked_subcommand, *ctx.args]
@@ -109,12 +101,12 @@ def init(macros_dir):
             "No macros directory found. Please create a macros directory in the root of your dbt project."
         )
 
-    shutil.copy(Path(__file__).parent / "dbt_metric_utils_materialize.sql", macros_dir)
+    shutil.copy(Path(__file__).parent / "dbt_utils_metric_materialize.sql", macros_dir)
 
     click.secho(
         "Replaced dbt executable with dbt-utils executable."
-        + "All calls to dbt will be intercepted by dbt-utils and proxied to dbt."
-        + "You may need to restart your shell for the desired effect.",
+        + " All calls to dbt will be intercepted by dbt-utils and proxied to dbt."
+        + " You may need to restart your shell for the desired effect.",
         fg="green",
     )
 

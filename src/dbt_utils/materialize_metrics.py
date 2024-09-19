@@ -10,7 +10,7 @@ new_dbt_vars: Dict[str, str] = {}
 materialized_metric_dependencies = {}
 
 
-def dbt_metric_utils_materialize(
+def dbt_utils_metric_materialize(
     node_id: str,
     metrics: List[str],
     dimensions: List[str] | None = None,
@@ -63,7 +63,7 @@ def _write_metric_queries(dbt_target: str | None = None) -> dict:
     materialize_calls = [
         (x[0], m.group(0))
         for x in materialize_calls_raw_sql
-        if (m := re.search(r"dbt_metric_utils_materialize\(.*\)", x[1]))
+        if (m := re.search(r"dbt_utils_metric_materialize\(.*\)", x[1], re.DOTALL))
     ]
 
     for node_id, mc in materialize_calls:

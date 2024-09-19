@@ -60,6 +60,8 @@ idna==3.7
     # via requests
 importlib-metadata==6.11.0
     # via dbt-semantic-interfaces
+iniconfig==2.0.0
+    # via pytest
 isodate==0.6.1
     # via agate
     # via dbt-common
@@ -101,11 +103,14 @@ ordered-set==4.1.0
     # via deepdiff
 packaging==24.1
     # via dbt-core
+    # via pytest
 parsedatetime==2.6
     # via agate
 pathspec==0.12.1
     # via dbt-common
     # via dbt-core
+pluggy==1.5.0
+    # via pytest
 protobuf==4.25.4
     # via dbt-adapters
     # via dbt-common
@@ -113,6 +118,7 @@ protobuf==4.25.4
 pydantic==1.10.17
     # via dbt-semantic-interfaces
     # via metricflow
+pytest==8.3.3
 python-dateutil==2.9.0.post0
     # via dbt-common
     # via dbt-semantic-interfaces
