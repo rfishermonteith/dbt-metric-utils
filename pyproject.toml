@@ -1,6 +1,6 @@
 [project]
 name = "dbt-utils"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Add your description here"
 authors = [
     { name = "Diederik Jan Lemkes", email = "dj.lemkes@gmail.com" }
@@ -44,3 +44,6 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dbt_utils"]
+
+[tool.hatch.version]
+path = "src/dbt_utils/__init__.py"

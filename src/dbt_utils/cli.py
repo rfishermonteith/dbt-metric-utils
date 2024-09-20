@@ -10,6 +10,7 @@ from pathlib import Path
 import click
 
 from dbt_utils.materialize_metrics import get_metric_queries_as_dbt_vars
+from dbt_utils import __version__
 
 
 def exit_with_error(msg: str):
@@ -46,7 +47,6 @@ class CatchAllGroup(click.Group):
     ),
 )
 @click.option("--debug", "-d", is_flag=True)
-# @click.version_option(version=__version__)
 @click.pass_context
 def cli(ctx, debug):
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
