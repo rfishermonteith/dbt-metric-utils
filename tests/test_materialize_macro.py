@@ -22,7 +22,9 @@ def jinja_env(execute: bool = False, test_local_vars: dict | None = None):
     # Macro should be added to the environment after all vars have been set.
     # Otherwise vars will not be available in the macro.
     env.globals["var"] = env.from_string(var_mock_macro).module.var
-    env.globals["log"] = env.from_string("{%- macro log(msg) -%}{%- endmacro -%}").module.log
+    env.globals["log"] = env.from_string(
+        "{%- macro log(msg) -%}{%- endmacro -%}"
+    ).module.log
 
     return env.get_template("dbt_utils_metric_materialize.sql")
 

@@ -3,8 +3,6 @@ from dbt.cli.exceptions import DbtUsageException
 import os
 import sys
 import shutil
-import asyncio
-from functools import wraps
 from yaspin import yaspin
 
 
@@ -12,14 +10,6 @@ from pathlib import Path
 import click
 
 from dbt_utils.materialize_metrics import get_metric_queries_as_dbt_vars
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def exit_with_error(msg: str):
@@ -63,21 +53,23 @@ def cli(ctx, debug):
     # by means other than the `if __name__ == "main"` block below)
     ctx.ensure_object(dict)
     ctx.obj["debug"] = debug
+    # Use sys to extract commands. Click is working against us here because we use this catch-all group.
+    _args = sys.argv[1:]
 
     if (
-        ctx.invoked_subcommand is None
-        or ctx.invoked_subcommand not in ["compile", "docs", "show", "run", "test"]
-        or ctx.invoked_subcommand.startswith("--")
-        or ctx.invoked_subcommand.startswith("-")
-    ):
-        # We want to proxy this directly to dbt as we want to
-        # be as invisible as possible for the user.
-        args = (
-            [ctx.invoked_subcommand, *ctx.args]
-            if ctx.invoked_subcommand is not None
-            else ctx.args
+        # Plain invocation of dbt
+        len(_args) == 0
+        # Something like dbt --help
+        or _args[0].startswith("--")
+        or _args[0].startswith("-")
+        # Commands that don't require compilation.
+        # Docs generation requires compilation but serving doesn't. If we do, we reset the lineage again.
+        or (
+            _args[0] not in ["compile", "show", "run", "test"]
+            and (_args[0] == "docs" and _args[1] != "generate")
         )
-        res = dbtRunner().invoke(args)
+    ):
+        res = dbtRunner().invoke(_args)
 
         # Exit required to prevent from moving into the cath-all command.
         sys.exit(0 if res.success else 1)
