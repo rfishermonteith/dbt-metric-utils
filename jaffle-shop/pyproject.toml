@@ -1,0 +1,22 @@
+[project]
+name = "jaffle-shop"
+version = "0.1.0"
+dependencies = [
+    "dbt_metric_utils @ ..",
+    "dbt-core>=1.6.0",
+    "dbt-metricflow>=0.6.0",
+    "dbt-duckdb>=1.6.0",
+]
+readme = "README.md"
+requires-python = ">= 3.10"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+virtual = true
+managed = true
+dev-dependencies = [
+    "ruff==0.5.6"
+]
