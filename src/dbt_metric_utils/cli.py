@@ -1,16 +1,14 @@
-from dbt.cli.main import dbtRunner
-from dbt.cli.exceptions import DbtUsageException
 import os
-import sys
 import shutil
+import sys
+from pathlib import Path
+
+import click
+from dbt.cli.exceptions import DbtUsageException
+from dbt.cli.main import dbtRunner
 from yaspin import yaspin
 
-
-from pathlib import Path
-import click
-
-from dbt_utils.materialize_metrics import get_metric_queries_as_dbt_vars
-from dbt_utils import __version__
+from dbt_metric_utils.materialize_metrics import get_metric_queries_as_dbt_vars
 
 
 def exit_with_error(msg: str):
@@ -93,7 +91,7 @@ def init(macros_dir):
             "No macros directory found. Please create a macros directory in the root of your dbt project."
         )
 
-    shutil.copy(Path(__file__).parent / "dbt_utils_metric_materialize.sql", macros_dir)
+    shutil.copy(Path(__file__).parent / "dbt_metric_utils_materialize.sql", macros_dir)
 
     click.secho(
         "Replaced dbt executable with dbt-utils executable."

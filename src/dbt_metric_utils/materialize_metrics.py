@@ -1,16 +1,17 @@
-from typing import Dict, List, Tuple
-from dbt.cli.main import dbtRunner, dbtRunnerResult
 import re
-from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
-from dbt_metricflow.cli.cli_context import CLIContext
+from typing import Dict, List, Tuple
+
 import yaml
+from dbt.cli.main import dbtRunner, dbtRunnerResult
+from dbt_metricflow.cli.cli_context import CLIContext
+from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 
 mf = None
 new_dbt_vars: Dict[str, str] = {}
 materialized_metric_dependencies = {}
 
 
-def dbt_utils_metric_materialize(
+def dbt_metric_utils_materialize(
     node_id: str,
     metrics: List[str],
     dimensions: List[str] | None = None,
@@ -21,6 +22,10 @@ def dbt_utils_metric_materialize(
     where: str | None = None,
     order_by: List[str] | None = None,
 ):
+    """
+    This function should have _exactly_ the same name as our macro in dbt_metric_utils_materialize.sql
+    because it will be called via exec(). Yes, this is dirty, and it works :D.
+    """
     global new_dbt_vars
     global materialized_metric_dependencies
     global mf
@@ -63,7 +68,7 @@ def _write_metric_queries(dbt_target: str | None = None) -> dict:
     materialize_calls = [
         (x[0], m.group(0))
         for x in materialize_calls_raw_sql
-        if (m := re.search(r"dbt_utils_metric_materialize\(.*\)", x[1], re.DOTALL))
+        if (m := re.search(r"dbt_metric_utils_materialize\(.*\)", x[1], re.DOTALL))
     ]
 
     for node_id, mc in materialize_calls:

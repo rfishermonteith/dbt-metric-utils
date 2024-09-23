@@ -1,7 +1,7 @@
 [project]
-name = "dbt-utils"
+name = "dbt-metric-utils"
 dynamic = ["version"]
-description = "Add your description here"
+description = "Utilities for dbt metrics."
 authors = [
     { name = "Diederik Jan Lemkes", email = "dj.lemkes@gmail.com" }
 ]
@@ -15,8 +15,8 @@ readme = "README.md"
 requires-python = ">= 3.10"
 
 [project.scripts]
-dbt-utils = 'dbt_utils.cli:cli'
-dbtu = 'dbt_utils.cli:cli'
+dbt-metric-utils = 'dbt_metric_utils.cli:cli'
+dbtmu = 'dbt_metric_utils.cli:cli'
 
 [build-system]
 requires = ["hatchling"]
@@ -43,7 +43,14 @@ checks-fix = { chain = ["fmt-fix", "lint-fix"] }
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dbt_utils"]
+packages = ["src/dbt_metric_utils"]
 
 [tool.hatch.version]
-path = "src/dbt_utils/__init__.py"
+path = "src/dbt_metric_utils/__init__.py"
+
+[tool.ruff]
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Extend default config with Isort.
+select = ["E4", "E7", "E9", "F", "I"]

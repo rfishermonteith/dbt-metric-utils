@@ -14,7 +14,7 @@ def jinja_env(execute: bool = False, test_local_vars: dict | None = None):
     """
 
     env = Environment(
-        loader=FileSystemLoader("src/dbt_utils"), autoescape=select_autoescape()
+        loader=FileSystemLoader("src/dbt_metric_utils"), autoescape=select_autoescape()
     )
 
     env.globals["execute"] = execute
@@ -26,31 +26,31 @@ def jinja_env(execute: bool = False, test_local_vars: dict | None = None):
         "{%- macro log(msg) -%}{%- endmacro -%}"
     ).module.log
 
-    return env.get_template("dbt_utils_metric_materialize.sql")
+    return env.get_template("dbt_metric_utils_materialize.sql")
 
 
 @pytest.fixture
-def dbt_utils_metric_encode_materialize_lookup_key_fn():
-    return jinja_env().module.dbt_utils_metric_encode_materialize_lookup_key
+def dbt_metric_utils_encode_materialize_lookup_key_fn():
+    return jinja_env().module.dbt_metric_utils_encode_materialize_lookup_key
 
 
-def dbt_utils_metric_materialize_fn(execute: bool, test_local_vars: dict | None = None):
-    return jinja_env(execute, test_local_vars).module.dbt_utils_metric_materialize
+def dbt_metric_utils_materialize_fn(execute: bool, test_local_vars: dict | None = None):
+    return jinja_env(execute, test_local_vars).module.dbt_metric_utils_materialize
 
 
-def test_encode_dbt_utils_metric_materialize_lookup_key__empty(
-    dbt_utils_metric_encode_materialize_lookup_key_fn,
+def test_encode_dbt_metric_utils_materialize_lookup_key__empty(
+    dbt_metric_utils_encode_materialize_lookup_key_fn,
 ):
-    assert dbt_utils_metric_encode_materialize_lookup_key_fn() == EMPTY_LOOKUP_KEY
+    assert dbt_metric_utils_encode_materialize_lookup_key_fn() == EMPTY_LOOKUP_KEY
 
 
-def test_encode_dbt_utils_metric_materialize_lookup_key(
-    dbt_utils_metric_encode_materialize_lookup_key_fn,
+def test_encode_dbt_metric_utils_materialize_lookup_key(
+    dbt_metric_utils_encode_materialize_lookup_key_fn,
 ):
     expected = "metrics=['m1'],dimensions=['dim1'],group_by=gb,limit=l,time_start=ts,time_end=te,where=w,order_by=ob"
 
     assert (
-        dbt_utils_metric_encode_materialize_lookup_key_fn(
+        dbt_metric_utils_encode_materialize_lookup_key_fn(
             ["m1"], ["dim1"], "gb", "l", "ts", "te", "w", "ob"
         )
         == expected
@@ -58,19 +58,19 @@ def test_encode_dbt_utils_metric_materialize_lookup_key(
 
 
 def test_macro_dbt_metric_utils_materialize__non_execute():
-    assert dbt_utils_metric_materialize_fn(execute=False)() == EMPTY_LOOKUP_KEY
+    assert dbt_metric_utils_materialize_fn(execute=False)() == EMPTY_LOOKUP_KEY
 
 
 def test_macro_dbt_metric_utils_materialize(
-    dbt_utils_metric_encode_materialize_lookup_key_fn,
+    dbt_metric_utils_encode_materialize_lookup_key_fn,
 ):
     macro_args = [["m1"], ["dim1"], "gb", "l", "ts", "te", "w", "ob"]
     expected_query = "SELECT a FROM some_table"
 
-    lookup_key = dbt_utils_metric_encode_materialize_lookup_key_fn(*macro_args)
+    lookup_key = dbt_metric_utils_encode_materialize_lookup_key_fn(*macro_args)
 
     assert (
-        dbt_utils_metric_materialize_fn(
+        dbt_metric_utils_materialize_fn(
             execute=True, test_local_vars={lookup_key: expected_query}
         )(*macro_args)
         == f"({expected_query})"

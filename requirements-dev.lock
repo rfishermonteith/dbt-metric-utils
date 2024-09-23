@@ -25,9 +25,9 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via dbt-core
+    # via dbt-metric-utils
     # via dbt-metricflow
     # via dbt-semantic-interfaces
-    # via dbt-utils
 colorama==0.4.6
     # via dbt-common
     # via halo
@@ -40,12 +40,12 @@ dbt-common==1.7.0
     # via dbt-adapters
     # via dbt-core
 dbt-core==1.8.4
+    # via dbt-metric-utils
     # via dbt-metricflow
-    # via dbt-utils
 dbt-extractor==0.5.1
     # via dbt-core
 dbt-metricflow==0.7.1
-    # via dbt-utils
+    # via dbt-metric-utils
 dbt-semantic-interfaces==0.5.1
     # via dbt-core
     # via dbt-metricflow
@@ -176,6 +176,6 @@ update-checker==0.18.0
 urllib3==2.2.2
     # via requests
 yaspin==3.0.2
-    # via dbt-utils
+    # via dbt-metric-utils
 zipp==3.19.2
     # via importlib-metadata
