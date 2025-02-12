@@ -104,18 +104,17 @@ def init(macros_dir):
 
 @click.pass_context
 def parse_and_proxy(ctx, target):
-    with yaspin(text="Building metric queries...", color="yellow") as spinner:
-        manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
-        spinner.ok("✅ ")
-        res = dbtRunner(manifest=manifest).invoke(
-            [ctx.command.name, *ctx.args, "--vars", metric_query_as_vars]
-        )
+    # TODO: add logging (preferably in a similar form to dbt)
+    manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
+    res = dbtRunner(manifest=manifest).invoke(
+        [ctx.command.name, *ctx.args, "--vars", metric_query_as_vars]
+    )
 
-        match res.exception:
-            case DbtUsageException():
-                exit_with_error(str(res.exception))
-            case _:
-                pass
+    match res.exception:
+        case DbtUsageException():
+            exit_with_error(str(res.exception))
+        case _:
+            pass
 
 
 if __name__ == "__main__":
