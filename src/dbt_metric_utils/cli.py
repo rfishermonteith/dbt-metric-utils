@@ -66,6 +66,7 @@ def cli(ctx, debug):
             _args[0] not in ["compile", "show", "run", "test"]
             and (_args[0] == "docs" and _args[1] != "generate")
         )
+        or (_args[0] in ["clean","deps"])  # TODO: there may be other subcommands which should be passed through
     ):
         res = dbtRunner().invoke(_args)
 
