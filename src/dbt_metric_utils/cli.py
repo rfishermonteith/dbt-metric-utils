@@ -1,12 +1,12 @@
 import os
 import shutil
 import sys
+import yaml
 from pathlib import Path
 
 import click
 from dbt.cli.exceptions import DbtUsageException
 from dbt.cli.main import dbtRunner
-from yaspin import yaspin
 
 from dbt_metric_utils.materialize_metrics import get_metric_queries_as_dbt_vars
 
@@ -106,8 +106,21 @@ def init(macros_dir):
 def parse_and_proxy(ctx, target):
     # TODO: add logging (preferably in a similar form to dbt)
     manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
+
+    # Append vars in the input args to the metric_query_as_vars
+    vars_dict = yaml.safe_load(metric_query_as_vars)
+
+    provided_vars = {}
+    provided_vars_ind = ctx.args.index("--vars") if "--vars" in ctx.args else None
+    if provided_vars_ind is not None:
+        provided_vars = ctx.args[provided_vars_ind+1]
+        provided_vars = yaml.safe_load(provided_vars)  # Should work for both yaml and json
+        ctx.args = ctx.args[0:provided_vars_ind]+ctx.args[provided_vars_ind+2:]
+
+    for k,v in provided_vars.items():
+        vars_dict[k] = v
     res = dbtRunner(manifest=manifest).invoke(
-        [ctx.command.name, *ctx.args, "--vars", metric_query_as_vars]
+        [ctx.command.name, *ctx.args, "--vars", yaml.dump(vars_dict)]
     )
 
     match res.exception:
