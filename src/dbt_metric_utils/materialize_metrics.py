@@ -48,7 +48,10 @@ def dbt_metric_utils_materialize(
         + f"limit={limit or ''},time_start={time_start or ''},"
         + f"time_end={time_end or ''},where={where or ''},order_by={order_by or ''}"
     ] = mf_query
-    materialized_metric_dependencies[node_id] = metrics
+    if node_id in materialized_metric_dependencies:
+        materialized_metric_dependencies[node_id] = list(set(materialized_metric_dependencies[node_id]).union(set(metrics)))
+    else:
+        materialized_metric_dependencies[node_id] = metrics
 
 
 def _write_metric_queries(dbt_target: str | None = None) -> dict:
@@ -65,11 +68,11 @@ def _write_metric_queries(dbt_target: str | None = None) -> dict:
     materialize_calls_raw_sql = [
         (n.unique_id, n.raw_code) for k, n in manifest.nodes.items() if "model." in k
     ]
-    materialize_calls = [
-        (x[0], m.group(0))
-        for x in materialize_calls_raw_sql
-        if (m := re.search(r"dbt_metric_utils_materialize\(.*\)", x[1], re.DOTALL))
-    ]
+    materialize_calls = []
+    for m in materialize_calls_raw_sql:
+        if matches := re.findall(r"\{\{(\s*dbt_metric_utils_materialize\(.*?\)\s*)\}\}", m[1], re.DOTALL):
+            for match in matches:
+                materialize_calls.append((m[0], match.replace(" ", "").replace("\n", "")))
 
     for node_id, mc in materialize_calls:
         # LOL so dirty :D.
