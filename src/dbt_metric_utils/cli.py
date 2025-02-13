@@ -1,11 +1,13 @@
+import sys
 import os
 import shutil
-import sys
+
+import click
 import yaml
 from pathlib import Path
 
-import click
 from dbt.cli.exceptions import DbtUsageException
+import dbt.cli.main as dbt_main
 from dbt.cli.main import dbtRunner
 
 from dbt_metric_utils.materialize_metrics import get_metric_queries_as_dbt_vars
@@ -16,72 +18,14 @@ def exit_with_error(msg: str):
     sys.exit(1)
 
 
-class CatchAllGroup(click.Group):
-    """
-    Small wrapper that forwards all unknown commands to a callback function.
-    This allows us to e.g. proxy unknown commands to another process.
-    """
-
-    def get_command(self, ctx, cmd_name):
-        cmd = super().get_command(ctx, cmd_name)
-        if cmd is not None:
-            return cmd
-
-        return click.Command(
-            cmd_name,
-            callback=parse_and_proxy,
-            context_settings=dict(ignore_unknown_options=True, allow_extra_args=True),
-            params=[click.Option(["--target"], type=str, required=False)],
-        )
-
-
-@click.group(
-    cls=CatchAllGroup,
-    invoke_without_command=True,
-    context_settings=dict(
-        ignore_unknown_options=True,
-        allow_extra_args=True,
-        help_option_names=["-dbtuh", "--dbt-utils-help"],
-    ),
-)
-@click.option("--debug", "-d", is_flag=True)
-@click.pass_context
-def cli(ctx, debug):
-    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
-    # by means other than the `if __name__ == "main"` block below)
-    ctx.ensure_object(dict)
-    ctx.obj["debug"] = debug
-    # Use sys to extract commands. Click is working against us here because we use this catch-all group.
-    _args = sys.argv[1:]
-
-    if (
-        # Plain invocation of dbt
-        len(_args) == 0
-        # Something like dbt --help
-        or _args[0].startswith("--")
-        or _args[0].startswith("-")
-        # Commands that don't require compilation.
-        # Docs generation requires compilation but serving doesn't. If we do, we reset the lineage again.
-        or (
-            _args[0] not in ["compile", "show", "run", "test"]
-            and (_args[0] == "docs" and _args[1] != "generate")
-        )
-        or (_args[0] in ["clean","deps"])  # TODO: there may be other subcommands which should be passed through
-    ):
-        res = dbtRunner().invoke(_args)
-
-        # Exit required to prevent from moving into the cath-all command.
-        sys.exit(0 if res.success else 1)
-
-
-@cli.command()
+@click.command("init-dbtmu")
 @click.option(
     "--macros_dir",
     type=click.Path(exists=True),
     required=False,
     default=Path("./macros"),
 )
-def init(macros_dir):
+def init_dbtmu(macros_dir):
     invocation_path = Path(os.path.abspath(sys.argv[0]))
     # Shadow dbt executable with dbt-utils executable
     shutil.copy(invocation_path, invocation_path.parent / "dbt")
@@ -102,34 +46,59 @@ def init(macros_dir):
     )
 
 
-@click.pass_context
-def parse_and_proxy(ctx, target):
-    print("running dbt-metric-utils")
-    # TODO: add logging (preferably in a similar form to dbt)
-    manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
+def cli():
+    # Do we need to intervene, or can we pass directly to dbt?
+    _args = sys.argv[1:]
 
-    # Append vars in the input args to the metric_query_as_vars
-    vars_dict = yaml.safe_load(metric_query_as_vars)
-
-    provided_vars = {}
-    provided_vars_ind = ctx.args.index("--vars") if "--vars" in ctx.args else None
-    if provided_vars_ind is not None:
-        provided_vars = ctx.args[provided_vars_ind+1]
-        provided_vars = yaml.safe_load(provided_vars)  # Should work for both yaml and json
-        ctx.args = ctx.args[0:provided_vars_ind]+ctx.args[provided_vars_ind+2:]
-
-    for k,v in provided_vars.items():
-        vars_dict[k] = v
-    res = dbtRunner(manifest=manifest).invoke(
-        [ctx.command.name, *ctx.args, "--vars", yaml.dump(vars_dict)]
+    if (
+            len(_args) == 0  # Plain invocation of dbt
+            # Something like dbt --help
+            or _args[0].startswith("-")
+            # Commands that require compilation.
+            # Docs generation requires compilation but serving doesn't. If we do, we reset the lineage again.
+            or (
+            _args[0] not in ["compile", "show", "run", "test", "build"]
+            and (_args[0] == "docs" and _args[1] != "generate")
     )
+            or (_args[0] in ["clean", "deps", "init-dbtmu", "init"])
+            # TODO: there may be other subcommands which should be passed through
+    ):
+        # We don't need to intervene
+        return dbt_main.cli()
+    else:
+        ctx = dbt_main.cli.make_context("cli", _args)
+        subcommand_name = _args[0]
+        # Ensure that subcommand is valid
+        if not dbt_main.cli.get_command(ctx, subcommand_name):
+            ctx.fail(f'No such command "{subcommand_name}".')
 
-    match res.exception:
-        case DbtUsageException():
-            exit_with_error(str(res.exception))
-        case _:
-            pass
+        sub_cmd = dbt_main.cli.get_command(ctx, subcommand_name)
+        sub_ctx = sub_cmd.make_context(subcommand_name, ctx.args, parent=ctx)
+        target = sub_ctx.params.get('target')
+
+        # Update the dependencies in the manifest and get the compilied queries
+        manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
+
+        # Append vars in the input args to the metric_query_as_vars
+        vars_dict = yaml.safe_load(metric_query_as_vars)
+        provided_vars = sub_ctx.params.get('vars')
+        if provided_vars:
+            for k, v in provided_vars.items():
+                vars_dict[k] = v
+
+        # We don't remove vars from _args, since they'll be overridden by the explicit --vars
+        res = dbtRunner(manifest=manifest).invoke([_args[0], *_args[1:], "--vars", yaml.dump(vars_dict)])
+
+        match res.exception:
+            case DbtUsageException():
+                exit_with_error(str(res.exception))
+            case _:
+                pass
+
+        sys.exit(0 if res.success else 1)
 
 
-if __name__ == "__main__":
-    cli()
+dbt_main.cli.add_command(init_dbtmu)
+
+if __name__ == '__main__':
+    sys.exit(cli())
