@@ -104,6 +104,7 @@ def init(macros_dir):
 
 @click.pass_context
 def parse_and_proxy(ctx, target):
+    print("running dbt-metric-utils")
     # TODO: add logging (preferably in a similar form to dbt)
     manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
 
