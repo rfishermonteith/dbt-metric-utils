@@ -11,13 +11,12 @@ from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 MATERIALIZE_CALL_PATTERN = r"\{\{(\s*dbt_metric_utils_materialize\(.*?\)\s*)\}\}"
 
 
-def render_metric(metricflow_engine, metric_name: str, metric_kwargs: dict) -> Tuple[str, str]:
+def generate_metric_sql(metricflow_engine, metric_kwargs: dict) -> Tuple[str, str]:
     """
-    Renders a metric by delegating to the `render_dbt_metric_utils_materialize` function.
+    Generates a metric by delegating to the `render_dbt_metric_utils_materialize_with_key` function.
 
     Args:
         metricflow_engine: The MetricFlow engine instance.
-        metric_name: The unique identifier for the metric.
         metric_kwargs: A dictionary of keyword arguments for the materialization.
 
     Returns:
@@ -25,15 +24,14 @@ def render_metric(metricflow_engine, metric_name: str, metric_kwargs: dict) -> T
           - var_key: A string key representing the metric configuration.
           - var_val: The rendered SQL query for the metric.
     """
-    var_key, var_val = render_dbt_metric_utils_materialize(
-        mf=metricflow_engine, node_id=metric_name, **metric_kwargs
+    var_key, var_val = render_dbt_metric_utils_materialize_with_key(
+        mf=metricflow_engine, **metric_kwargs
     )
     return var_key, var_val
 
 
-def render_dbt_metric_utils_materialize(
+def render_dbt_metric_utils_materialize_with_key(
     mf,
-    node_id: str,
     metrics: List[str],
     dimensions: Optional[List[str]] = None,
     group_by: Optional[List[str]] = None,
@@ -48,7 +46,6 @@ def render_dbt_metric_utils_materialize(
 
     Args:
         mf: The MetricFlow engine instance.
-        node_id: The identifier for the node/model.
         metrics: List of metric names.
         dimensions: Optional list of dimension names.
         group_by: Optional list of columns to group by.
@@ -94,7 +91,7 @@ def render_dbt_metric_utils_materialize(
     return var_key, var_val
 
 
-def _parse_kwargs(func_str: str) -> dict:
+def _parse_function_call_kwargs(func_str: str) -> dict:
     """
     Parses a string representing a function call and returns its keyword arguments as a dictionary.
 
@@ -126,7 +123,7 @@ def _parse_kwargs(func_str: str) -> dict:
     return kwargs
 
 
-def _write_metric_queries(dbt_target: Optional[str] = None) -> Tuple[dict, dict]:
+def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = None) -> Tuple[dict, dict]:
     """
     Extracts materialize calls from dbt nodes, renders metric queries using MetricFlow,
     and updates the dependency graph in the dbt manifest.
@@ -167,8 +164,8 @@ def _write_metric_queries(dbt_target: Optional[str] = None) -> Tuple[dict, dict]
     new_dbt_vars = {}
     materialized_metric_dependencies = {}
     for node_id, materialize_call_str in materialize_calls:
-        kwargs = _parse_kwargs(materialize_call_str)
-        var_key, var_val = render_metric(mf, node_id, kwargs)
+        kwargs = _parse_function_call_kwargs(materialize_call_str)
+        var_key, var_val = generate_metric_sql(mf, kwargs)
         new_dbt_vars[var_key] = var_val
 
         # Update the dependency mapping.
@@ -204,6 +201,6 @@ def get_metric_queries_as_dbt_vars(dbt_target: Optional[str] = None) -> Tuple[di
           - yaml_vars: A YAML-formatted string of the new dbt variables mapping metric configurations
                        to their rendered SQL queries.
     """
-    manifest, new_dbt_vars = _write_metric_queries(dbt_target)
+    manifest, new_dbt_vars = _generate_metric_queries_and_update_manifest(dbt_target)
     yaml_vars = yaml.dump(new_dbt_vars, default_flow_style=False)
     return manifest, yaml_vars
