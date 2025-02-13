@@ -38,12 +38,12 @@ Along this sequence of steps, we also ensure that the dependency graph in `manif
 
 We describe here some details of how the code is used to achieve the steps described above.
 
-## Initialisation
+### Initialisation
 You'll run `dbtmu init` (or `dbt-metric-utils init`) once, which wil:
 1. Add dbt_metric_utils_marterialize.sql to macros/, which are the macros used by dbt at compile time (like all regular macros)
 2. Replace the dbt script in bin/ with a dbt-metric-utils version, which is identical except for importing `from dbt_metric_utils.cli import cli` instead of `from dbt.main import main`. This will reroute all dbt calls to the dbt-metric-utils CLI, instead of dbt.
 
-## At run-time
+### At run-time
 
 When you call any `dbt ...` command, this calls the dbt-metric-utils CLI (as described above)
 
@@ -58,7 +58,7 @@ If the subcommand requires MetricFlow compilation (e.g. compile, run, test etc),
 
 If the command doesn't require MetricFlow compilation, dbt is called using the Python integration (`res = dbtRunner().invoke(_args)`)
 
-# Key future-proofing considerations
+## Key future-proofing considerations
 
 There is of course a risk that something changes in a future dbt version which breaks dbt-metric-utils. Below is a list of assumptions/requirements for the integration, so that we can make a sensible decision on:
 1. Whether this should automatically work for future dbt versions
