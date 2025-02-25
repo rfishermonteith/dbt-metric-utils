@@ -165,7 +165,12 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
     materialized_metric_dependencies = {}
     for node_id, materialize_call_str in materialize_calls:
         kwargs = _parse_function_call_kwargs(materialize_call_str)
-        var_key, var_val = generate_metric_sql(mf, kwargs)
+        try: 
+            var_key, var_val = generate_metric_sql(mf, kwargs)
+        except Exception as e:
+            raise Exception(f"Error generating sql for {node_id}, for the following metric invocation:\n\n{materialize_call_str}")
+            raise
+
         new_dbt_vars[var_key] = var_val
 
         # Update the dependency mapping.
