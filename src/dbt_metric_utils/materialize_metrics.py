@@ -1,4 +1,3 @@
-import re
 import ast
 import yaml
 from typing import Dict, List, Tuple, Optional
@@ -7,8 +6,7 @@ from dbt.cli.main import dbtRunner, dbtRunnerResult
 from dbt_metricflow.cli.cli_context import CLIContext
 from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 
-# Constant for the regex pattern to extract materialize calls.
-MATERIALIZE_CALL_PATTERN = r"\{\{(\s*dbt_metric_utils_materialize\(.*?\)\s*)\}\}"
+from dbt_metric_utils.helpers import _extract_materialize_calls
 
 
 def generate_metric_sql(metricflow_engine, metric_kwargs: dict) -> Tuple[str, str]:
@@ -123,6 +121,7 @@ def _parse_function_call_kwargs(func_str: str) -> dict:
     return kwargs
 
 
+
 def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = None) -> Tuple[dict, dict]:
     """
     Extracts materialize calls from dbt nodes, renders metric queries using MetricFlow,
@@ -155,7 +154,8 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
     materialize_calls = []
     for node_id, raw_code in materialize_calls_raw_sql:
         # Find all materialize calls in the raw code using the regex pattern.
-        matches = re.findall(MATERIALIZE_CALL_PATTERN, raw_code, re.DOTALL)
+        matches = _extract_materialize_calls(raw_code)
+
         for match in matches:
             # Remove extra spaces and newlines.
             cleaned_call = match.replace(" ", "").replace("\n", "")
