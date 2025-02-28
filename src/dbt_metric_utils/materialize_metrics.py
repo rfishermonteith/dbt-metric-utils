@@ -6,7 +6,64 @@ from dbt.cli.main import dbtRunner, dbtRunnerResult
 from dbt_metricflow.cli.cli_context import CLIContext
 from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 
-from dbt_metric_utils.helpers import _extract_materialize_calls
+from dbt_metric_utils.helpers import extract_materialize_calls, compute_list_hash
+
+from joblib import Memory
+
+memory = Memory(location='./.cache', verbose=20)
+memory.reduce_size("3M")  # TODO: test this size
+
+
+def generate_metric_sql_outer_wrapper(metricflow_engine, manifest, metric_kwargs):
+    # Read the manifest to find state of metrics and semantic models they depend on
+    metrics = [f"metric.w3w.{x}" for x in metric_kwargs['metrics']]
+
+    # TODO: this could possibly be done with the metricflow api (if a method exists)
+    def get_dependency_state(nodes):
+        # If 'nodes' is already a list, flatten one level of recursion.
+        if isinstance(nodes, list):
+            if len(nodes) == 0:
+                return []
+            else:
+                next_nodes = nodes
+        else:
+            # For a single node, determine its type and process accordingly.
+            match nodes.split(".")[0]:
+                case "metric":
+                    manifest_level = manifest.metrics
+                case "semantic_model":
+                    manifest_level = manifest.semantic_models
+                case _:
+                    # For any other type, just return the node wrapped in a list.
+                    return []
+            next_nodes = manifest_level[nodes].depends_on.nodes
+            nodes = [nodes]
+
+        outs = [get_dependency_state(n) for n in next_nodes]
+        # Flatten the array if necessary
+        if isinstance(outs, list):
+            outs = [item for sublist in outs for item in sublist]
+
+        return list(set(outs + nodes))
+
+    all_dependencies = sorted(get_dependency_state(metrics))
+
+    # Look up the state of these dependencies
+    all_states = []
+    for x in all_dependencies:
+        dep = (manifest.metrics if x.split(".")[0] == "metric" else manifest.semantic_models)[x].to_dict()
+        # Remove fields we don't want (created_at)
+        dep.pop("created_at", None)
+        all_states.append(dep)
+
+    all_states_hash = compute_list_hash(all_states)
+
+    return generate_metric_sql_inner_wrapper(metricflow_engine, metric_kwargs, all_states_hash)
+
+
+@memory.cache(ignore=['metricflow_engine'])
+def generate_metric_sql_inner_wrapper(metricflow_engine, metric_kwargs, file_hash):
+    return generate_metric_sql(metricflow_engine, metric_kwargs)
 
 
 def generate_metric_sql(metricflow_engine, metric_kwargs: dict) -> Tuple[str, str]:
@@ -154,7 +211,7 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
     materialize_calls = []
     for node_id, raw_code in materialize_calls_raw_sql:
         # Find all materialize calls in the raw code using the regex pattern.
-        matches = _extract_materialize_calls(raw_code)
+        matches = extract_materialize_calls(raw_code)
 
         for match in matches:
             # Remove extra spaces and newlines.
