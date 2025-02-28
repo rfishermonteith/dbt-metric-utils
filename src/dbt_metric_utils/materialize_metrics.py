@@ -10,7 +10,7 @@ from dbt_metric_utils.helpers import extract_materialize_calls, compute_list_has
 
 from joblib import Memory
 
-memory = Memory(location='./.cache', verbose=20)
+memory = Memory(location='./.cache', verbose=0)
 memory.reduce_size("3M")  # TODO: test this size
 
 
@@ -223,7 +223,7 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
     for node_id, materialize_call_str in materialize_calls:
         kwargs = _parse_function_call_kwargs(materialize_call_str)
         try: 
-            var_key, var_val = generate_metric_sql(mf, kwargs)
+            var_key, var_val = generate_metric_sql_outer_wrapper(mf, manifest, kwargs)
         except Exception as e:
             raise Exception(f"Error generating sql for {node_id}, for the following metric invocation:\n\n{materialize_call_str}")
             raise
