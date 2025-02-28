@@ -1,4 +1,4 @@
-from src.dbt_metric_utils.helpers import _extract_materialize_calls
+from src.dbt_metric_utils.helpers import extract_materialize_calls
 
 
 def test_dimension_in_call():
@@ -18,7 +18,7 @@ def test_dimension_in_call():
     )"""
     ]
 
-    actual_sql = _extract_materialize_calls(input_sql)
+    actual_sql = extract_materialize_calls(input_sql)
     assert expected_sql == actual_sql
 
 
@@ -43,5 +43,5 @@ def test_multiple_calls():
     )"""
     ]
 
-    actual_sql = _extract_materialize_calls(input_sql)
+    actual_sql = extract_materialize_calls(input_sql)
     assert expected_sql == actual_sql
