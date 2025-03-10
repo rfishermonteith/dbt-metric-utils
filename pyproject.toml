@@ -12,7 +12,7 @@ dependencies = [
     "yaspin>=2"
 ]
 readme = "README.md"
-requires-python = ">= 3.10"
+requires-python = ">= 3.8"
 
 [project.scripts]
 dbt-metric-utils = 'dbt_metric_utils.cli:cli'
