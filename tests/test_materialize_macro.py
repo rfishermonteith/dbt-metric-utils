@@ -1,12 +1,13 @@
 import pytest
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from typing import Optional
 
 EMPTY_LOOKUP_KEY = (
     "metrics=,dimensions=,group_by=,limit=,time_start=,time_end=,where=,order_by="
 )
 
 
-def jinja_env(execute: bool = False, test_local_vars: dict | None = None):
+def jinja_env(execute: bool = False, test_local_vars: Optional[dict] = None):
     var_mock_macro = """
     {%- macro var(name, default_value) -%}
         {{ test_local_vars.get(name, default_value) }}
@@ -34,7 +35,7 @@ def dbt_metric_utils_encode_materialize_lookup_key_fn():
     return jinja_env().module.dbt_metric_utils_encode_materialize_lookup_key
 
 
-def dbt_metric_utils_materialize_fn(execute: bool, test_local_vars: dict | None = None):
+def dbt_metric_utils_materialize_fn(execute: bool, test_local_vars: Optional[dict] = None):
     return jinja_env(execute, test_local_vars).module.dbt_metric_utils_materialize
 
 

@@ -1,4 +1,4 @@
-from src.dbt_metric_utils.helpers import _extract_materialize_calls
+from dbt_metric_utils.helpers import _extract_materialize_calls
 
 
 def test_dimension_in_call():
