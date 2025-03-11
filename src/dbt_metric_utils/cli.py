@@ -139,11 +139,16 @@ def cli():
     invoke_args = [_args[0], *_args[1:], "--vars", yaml.dump(metric_vars)]
     res = dbtRunner(manifest=manifest).invoke(invoke_args)
 
-    match res.exception:
-        case DbtUsageException():
-            exit_with_error(str(res.exception))
-        case _:
-            pass
+    if isinstance(res.exception, DbtUsageException):
+        exit_with_error(str(res.exception))
+    else:
+        pass
+
+    # match res.exception:
+    #     case DbtUsageException():
+    #         exit_with_error(str(res.exception))
+    #     case _:
+    #         pass
 
     return 0 if res.success else 1
 
