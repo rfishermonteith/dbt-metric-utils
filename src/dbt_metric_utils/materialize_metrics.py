@@ -28,14 +28,13 @@ def generate_metric_sql_outer_wrapper(metricflow_engine, manifest, metric_kwargs
                 next_nodes = nodes
         else:
             # For a single node, determine its type and process accordingly.
-            match nodes.split(".")[0]:
-                case "metric":
-                    manifest_level = manifest.metrics
-                case "semantic_model":
-                    manifest_level = manifest.semantic_models
-                case _:
-                    # For any other type, just return the node wrapped in a list.
-                    return []
+            if nodes.split(".")[0] == "metric":
+                manifest_level = manifest.metrics
+            elif nodes.split(".")[0] == "semantic_model":
+                manifest_level = manifest.semantic_models
+            else:
+                # For any other type, just return the node wrapped in a list.
+                return []
             next_nodes = manifest_level[nodes].depends_on.nodes
             nodes = [nodes]
 
