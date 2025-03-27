@@ -18,6 +18,11 @@ from dbt_common.events.base_types import BaseEvent, InfoLevel
 from dbt_metric_utils import custom_events_pb2
 
 
+def timestamp_to_datetime_string(ts) -> str:
+    timestamp_dt = datetime.fromtimestamp(ts.seconds + ts.nanos / 1e9)
+    return timestamp_dt.strftime("%H:%M:%S.%f")
+
+
 class CustomEvent(InfoLevel, BaseEvent):
     PROTO_TYPES_MODULE = custom_events_pb2
 
@@ -27,7 +32,7 @@ class MetricUtilsInterceptStart(CustomEvent):
         return "Z101"  # this code is not used in dbt core 1.8.4
 
     def message(self) -> str:
-        return f"Intercepting dbt command from metric utils at {self.started_at}"
+        return f"Intercepting dbt command from metric utils at {timestamp_to_datetime_string(self.started_at)}"
 
 
 class MetricUtilsInterceptInvokeOriginal(CustomEvent):
@@ -35,7 +40,7 @@ class MetricUtilsInterceptInvokeOriginal(CustomEvent):
         return "Z102"  # this code is not used in dbt core 1.8.4
 
     def message(self) -> str:
-        return f"Invoking original command at {self.started_at} after {self.elapsed_time}"
+        return f"Invoking original command at {timestamp_to_datetime_string(self.started_at)} after {self.elapsed_time} seconds."
 
 
 class MetricUtilsInterceptCompleted(CustomEvent):
@@ -43,7 +48,7 @@ class MetricUtilsInterceptCompleted(CustomEvent):
         return "Z103"  # this code is not used in dbt core 1.8.4
 
     def message(self) -> str:
-        return f"Interception completed at {self.completed_at} after {self.elapsed_time}"
+        return f"Interception completed at {timestamp_to_datetime_string(self.completed_at)} after {self.elapsed_time} seconds"
 
 
 def exit_with_error(msg: str) -> None:
