@@ -15,7 +15,7 @@ from dbt_metric_utils.materialize_metrics import get_metric_queries_as_dbt_vars
 
 from dbt_common.events.functions import fire_event
 from dbt_common.events.base_types import BaseEvent, InfoLevel
-import dbt_metric_utils.custom_events_pb2
+from dbt_metric_utils import custom_events_pb2
 
 
 class CustomEvent(InfoLevel, BaseEvent):
