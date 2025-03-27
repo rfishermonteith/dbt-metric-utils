@@ -182,6 +182,7 @@ def cli():
     invoke_args = [_args[0], *_args[1:], "--vars", yaml.dump(metric_vars)]
     fire_event(MetricUtilsInterceptInvokeOriginal(started_at=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                                                   elapsed_time=time.perf_counter() - start_time))
+    print(f"Invoking dbt command after {time.perf_counter() - start_time} seconds")
     res = dbtRunner(manifest=manifest).invoke(invoke_args)
 
     if isinstance(res.exception, DbtUsageException):
