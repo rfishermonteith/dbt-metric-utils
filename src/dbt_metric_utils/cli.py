@@ -175,6 +175,8 @@ def cli():
     if provided_vars:
         metric_vars.update(provided_vars)
 
+    fire_event(MetricUtilsInterceptInvokeOriginal(started_at=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                                                  elapsed_time=time.perf_counter() - start_time))
     # Build the command-line arguments for invoking dbt.
     # We append the merged variables as a YAML dump.
     invoke_args = [_args[0], *_args[1:], "--vars", yaml.dump(metric_vars)]
