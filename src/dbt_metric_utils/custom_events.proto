@@ -3,29 +3,14 @@ syntax = "proto3";
 package proto_types;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/struct.proto";
 
-// Common event info
-message CoreEventInfo {
-    string name = 1;
-    string code = 2;
-    string msg = 3;
-    string level = 4;
-    string invocation_id = 5;
-    int32 pid = 6;
-    string thread = 7;
-    google.protobuf.Timestamp ts = 8;
-    map<string, string> extra = 9;
-    string category = 10;
-}
 
 message MetricUtilsInterceptStart {
     google.protobuf.Timestamp started_at = 1;
 }
 
 message MetricUtilsInterceptStartMsg {
-    CoreEventInfo info = 1;
-    MetricUtilsInterceptStart data = 2;
+    MetricUtilsInterceptStart data = 1;
 }
 
 message MetricUtilsInterceptInvokeOriginal {
@@ -34,8 +19,7 @@ message MetricUtilsInterceptInvokeOriginal {
 }
 
 message MetricUtilsInterceptInvokeOriginalMsg {
-    CoreEventInfo info = 1;
-    MetricUtilsInterceptInvokeOriginal data = 2;
+    MetricUtilsInterceptInvokeOriginal data = 1;
 }
 
 message MetricUtilsInterceptCompleted {
@@ -44,6 +28,5 @@ message MetricUtilsInterceptCompleted {
 }
 
 message MetricUtilsInterceptCompletedMsg {
-    CoreEventInfo info = 1;
-    MetricUtilsInterceptCompleted data = 2;
+    MetricUtilsInterceptCompleted data = 1;
 }
