@@ -1,7 +1,9 @@
 import sys
 import os
 import shutil
+import time
 from pathlib import Path
+from datetime import datetime
 
 import click
 import yaml
@@ -10,6 +12,33 @@ from dbt.cli.exceptions import DbtUsageException
 import dbt.cli.main as dbt_main
 from dbt.cli.main import dbtRunner
 from dbt_metric_utils.materialize_metrics import get_metric_queries_as_dbt_vars
+
+from dbt.events.base_types import WarnLevel, InfoLevel, DebugLevel, ErrorLevel, DynamicLevel
+from dbt_common.events.functions import fire_event
+
+
+class MetricUtilsInterceptStart(InfoLevel):
+    def code(self) -> str:
+        return "Z101"  # this code is not used in dbt core 1.8.4
+
+    def message(self) -> str:
+        return f"Intercepting dbt command from metric utils at {self.start_time}"
+
+
+class MetricUtilsInterceptInvokeOriginal(InfoLevel):
+    def code(self) -> str:
+        return "Z102"  # this code is not used in dbt core 1.8.4
+
+    def message(self) -> str:
+        return f"Intercepting dbt command from metric utils at {self.start_time} after {self.elapsed_time}"
+
+
+class MetricUtilsInterceptCompleted(InfoLevel):
+    def code(self) -> str:
+        return "Z103"  # this code is not used in dbt core 1.8.4
+
+    def message(self) -> str:
+        return f"Interception completed at {self.start_time} after {self.elapsed_time}"
 
 
 def exit_with_error(msg: str) -> None:
@@ -111,6 +140,8 @@ def cli():
     # If the command does not require intervention, defer to the original dbt CLI.
     if not should_intercept_command(_args):
         return dbt_main.cli()
+    start_time = time.perf_counter()
+    fire_event(MetricUtilsInterceptStart(start_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")))
 
     # Create a Click context from the current CLI arguments.
     ctx = dbt_main.cli.make_context("cli", _args)
@@ -137,6 +168,8 @@ def cli():
     # Build the command-line arguments for invoking dbt.
     # We append the merged variables as a YAML dump.
     invoke_args = [_args[0], *_args[1:], "--vars", yaml.dump(metric_vars)]
+    fire_event(MetricUtilsInterceptInvokeOriginal(start_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                                                  elapsed_time=time.perf_counter() - start_time))
     res = dbtRunner(manifest=manifest).invoke(invoke_args)
 
     if isinstance(res.exception, DbtUsageException):
@@ -149,7 +182,8 @@ def cli():
     #         exit_with_error(str(res.exception))
     #     case _:
     #         pass
-
+    fire_event(MetricUtilsInterceptCompleted(start_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                                             elapsed_time=time.perf_counter() - start_time))
     return 0 if res.success else 1
 
 
