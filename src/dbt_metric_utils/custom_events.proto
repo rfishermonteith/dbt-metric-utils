@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package proto_types;
+
+import "google/protobuf/timestamp.proto";
+
+message MetricUtilsInterceptStart {
+    google.protobuf.Timestamp started_at = 1;
+}
+
+message MetricUtilsInterceptInvokeOriginal {
+    google.protobuf.Timestamp started_at = 1;
+    float elapsed_time = 2;
+}
+
+message MetricUtilsInterceptCompleted {
+    google.protobuf.Timestamp completed_at = 1;
+    float elapsed_time = 2;
+}
