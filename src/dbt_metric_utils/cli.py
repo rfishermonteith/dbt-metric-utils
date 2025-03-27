@@ -13,11 +13,11 @@ import dbt.cli.main as dbt_main
 from dbt.cli.main import dbtRunner
 from dbt_metric_utils.materialize_metrics import get_metric_queries_as_dbt_vars
 
-from dbt.events.base_types import WarnLevel, InfoLevel, DebugLevel, ErrorLevel, DynamicLevel
 from dbt_common.events.functions import fire_event
+from dbt_common.events.base_types import BaseEvent, InfoLevel
 
 
-class MetricUtilsInterceptStart(InfoLevel):
+class MetricUtilsInterceptStart(BaseEvent, InfoLevel):
     def code(self) -> str:
         return "Z101"  # this code is not used in dbt core 1.8.4
 
@@ -25,7 +25,7 @@ class MetricUtilsInterceptStart(InfoLevel):
         return f"Intercepting dbt command from metric utils at {self.start_time}"
 
 
-class MetricUtilsInterceptInvokeOriginal(InfoLevel):
+class MetricUtilsInterceptInvokeOriginal(BaseEvent, InfoLevel):
     def code(self) -> str:
         return "Z102"  # this code is not used in dbt core 1.8.4
 
@@ -33,7 +33,7 @@ class MetricUtilsInterceptInvokeOriginal(InfoLevel):
         return f"Intercepting dbt command from metric utils at {self.start_time} after {self.elapsed_time}"
 
 
-class MetricUtilsInterceptCompleted(InfoLevel):
+class MetricUtilsInterceptCompleted(BaseEvent, InfoLevel):
     def code(self) -> str:
         return "Z103"  # this code is not used in dbt core 1.8.4
 
