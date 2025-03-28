@@ -76,6 +76,8 @@ jinja2==3.1.4
     # via dbt-metricflow
     # via dbt-semantic-interfaces
     # via metricflow
+joblib==1.4.2
+    # via dbt-metric-utils
 jsonschema==4.23.0
     # via dbt-common
     # via dbt-semantic-interfaces
@@ -175,6 +177,8 @@ text-unidecode==1.3
     # via python-slugify
 tomli==2.2.1
     # via pytest
+tqdm==4.64.0
+    # via dbt-metric-utils
 typing-extensions==4.12.2
     # via dbt-adapters
     # via dbt-common

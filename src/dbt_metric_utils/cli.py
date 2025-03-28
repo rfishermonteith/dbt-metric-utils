@@ -165,7 +165,7 @@ def cli():
     sub_ctx = sub_cmd.make_context(subcommand_name, ctx.args, parent=ctx)
     target = sub_ctx.params.get("target")
 
-    # Update the manifest with metric queries using the provided target and get the compilied queries
+    # Update the manifest with metric queries using the provided target and get the compiled queries
     manifest, metric_query_as_vars = get_metric_queries_as_dbt_vars(target)
 
     # Load the metric queries as a dictionary.

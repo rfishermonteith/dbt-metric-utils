@@ -1,4 +1,6 @@
 import ast
+import time
+
 import yaml
 from typing import Dict, List, Tuple, Optional
 
@@ -9,6 +11,7 @@ from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 from dbt_metric_utils.helpers import extract_materialize_calls, compute_list_hash
 
 from joblib import Memory
+from tqdm import tqdm
 
 memory = Memory(location='./.cache', verbose=0)
 memory.reduce_size("3M")  # TODO: test this size
@@ -219,7 +222,10 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
 
     new_dbt_vars = {}
     materialized_metric_dependencies = {}
-    for node_id, materialize_call_str in materialize_calls:
+    print(f"Found {len(materialize_calls)} metric calls")
+    for node_id, materialize_call_str in tqdm(materialize_calls, desc='Generating sql', unit='tuple'):
+        print(f'Processing node {node_id}')
+        start = time.perf_counter()
         kwargs = _parse_function_call_kwargs(materialize_call_str)
         try: 
             var_key, var_val = generate_metric_sql_outer_wrapper(mf, manifest, kwargs)
@@ -237,6 +243,8 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
             )
         else:
             materialized_metric_dependencies[node_id] = metrics
+
+        print(f'Finished {node_id} after {time.perf_counter()-start} seconds')
 
     # Build a mapping from metric names to fully qualified node ids.
     metric_name_to_fqn = {metric.name: metric.unique_id for metric in manifest.metrics.values()}
@@ -263,5 +271,8 @@ def get_metric_queries_as_dbt_vars(dbt_target: Optional[str] = None) -> Tuple[di
                        to their rendered SQL queries.
     """
     manifest, new_dbt_vars = _generate_metric_queries_and_update_manifest(dbt_target)
+    print('Creating yaml variables')
+    start = time.perf_counter()
     yaml_vars = yaml.dump(new_dbt_vars, default_flow_style=False)
+    print(f'Finished created yaml variables time taken {time.perf_counter() - start} seconds')
     return manifest, yaml_vars
