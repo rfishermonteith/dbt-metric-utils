@@ -223,8 +223,8 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
     new_dbt_vars = {}
     materialized_metric_dependencies = {}
     print(f"Found {len(materialize_calls)} metric calls")
+    generate_sql_start = time.perf_counter()
     for node_id, materialize_call_str in tqdm(materialize_calls, desc='Generating sql', unit='tuple'):
-        print(f'Processing node {node_id}')
         start = time.perf_counter()
         kwargs = _parse_function_call_kwargs(materialize_call_str)
         try: 
@@ -238,20 +238,22 @@ def _generate_metric_queries_and_update_manifest(dbt_target: Optional[str] = Non
         # Update the dependency mapping.
         metrics = kwargs.get("metrics", [])
         if node_id in materialized_metric_dependencies:
-            materialized_metric_dependencies[node_id] = list(
-                set(materialized_metric_dependencies[node_id]).union(set(metrics))
-            )
+            materialized_metric_dependencies[node_id] = materialized_metric_dependencies[node_id] + metrics
+            #     list(
+            #     set(materialized_metric_dependencies[node_id]).union(set(metrics))
+            # )
         else:
             materialized_metric_dependencies[node_id] = metrics
 
         print(f'Finished {node_id} after {time.perf_counter()-start} seconds')
 
+    print(f'Generating sql completed after {time.perf_counter()-generate_sql_start} seconds')
     # Build a mapping from metric names to fully qualified node ids.
     metric_name_to_fqn = {metric.name: metric.unique_id for metric in manifest.metrics.values()}
 
     # Update the dependency graph so that dbt executes queries in the correct order.
     for node_id, metrics in materialized_metric_dependencies.items():
-        metric_fqns = [metric_name_to_fqn[m] for m in metrics if m in metric_name_to_fqn]
+        metric_fqns = [metric_name_to_fqn[m] for m in list(set(metrics)) if m in metric_name_to_fqn]
         manifest.nodes[node_id].depends_on.nodes.extend(metric_fqns)
 
     return manifest, new_dbt_vars
