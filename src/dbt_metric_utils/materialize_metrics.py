@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 import yaml
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-from dbt_metricflow.cli.cli_context import CLIContext
+from dbt_metricflow.cli.cli_configuration import CLIConfiguration
 from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 
 mf = None
@@ -19,7 +19,7 @@ def dbt_metric_utils_materialize(
     limit: int | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
-    where: str | None = None,
+    where: str | None = '',
     order_by: List[str] | None = None,
 ):
     """
@@ -36,11 +36,11 @@ def dbt_metric_utils_materialize(
         limit=limit,
         time_constraint_start=time_start,
         time_constraint_end=time_end,
-        where_constraint=where,
+        where_constraints=[where] if where else None,
         order_by_names=order_by,
     )
 
-    mf_query = mf.explain(mf_request).rendered_sql_without_descriptions.sql_query
+    mf_query = mf.explain(mf_request).sql_statement.without_descriptions.sql
 
     # Python renders no value as 'None' and Jinja as empty string.
     new_dbt_vars[
@@ -48,6 +48,7 @@ def dbt_metric_utils_materialize(
         + f"limit={limit or ''},time_start={time_start or ''},"
         + f"time_end={time_end or ''},where={where or ''},order_by={order_by or ''}"
     ] = mf_query
+
     if node_id in materialized_metric_dependencies:
         materialized_metric_dependencies[node_id] = list(set(materialized_metric_dependencies[node_id]).union(set(metrics)))
     else:
@@ -63,7 +64,9 @@ def _write_metric_queries(dbt_target: str | None = None) -> dict:
         else ["parse", "--target", dbt_target, "--quiet"]
     )
     manifest = res.result
-    mf = CLIContext().mf
+    config = CLIConfiguration()
+    config.setup()
+    mf = config.mf
 
     materialize_calls_raw_sql = [
         (n.unique_id, n.raw_code) for k, n in manifest.nodes.items() if "model." in k
